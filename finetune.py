@@ -199,9 +199,9 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model_conv.parameters(), lr=0.0001, momentum=0.9)
 
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 
 model_conv = train_model(model_conv, criterion, optimizer,
-                         exp_lr_scheduler, num_epochs=2)
+                         exp_lr_scheduler, num_epochs=200)
 
 
