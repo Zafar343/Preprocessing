@@ -8,12 +8,14 @@ import os
 # Function to rename multiple files
 def main():
     # folder = "./../../../Downloads/xyz"
-    folder = "./../../img/perfect"
+    folder = "./../../data-class2/data/traffic"
+    #a = 150
     for count, filename in enumerate(os.listdir(folder)):
-        dst1 = f"perfect_{str(count)}.png"
+
+        dst1 = f"Tra_{str(count)}.jpg"         #use count for nameing file from zero onwards
         src = f"{folder}/{filename}"  # foldername/filename, if .py file is outside folder
         dst = f"{folder}/{dst1}"
-
+        #a += 1
         # rename() function will
         # rename all the files
         if filename != dst1:
