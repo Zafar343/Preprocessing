@@ -17,9 +17,11 @@ import copy
 import torch.optim as optim
 from torch.optim import lr_scheduler
 
-path = os.path.join(os.path.curdir,"Data_set2")        #"Data/train"
 
-# Calculating Mean and Std Diviation for the images. Needed for Data Normalization.
+# path for mean and standard deviation calculation
+path = os.path.join(os.path.curdir,"Data_set1")        #Path for data normalization (actual road data is in Data_set2)
+
+# Calculating Mean and Std Deviation for the images. Needed for Data Normalization.
 normalizer = Normalize(path=path, batch_size=10)
 loaded_data = normalizer.data_load()
 mean, std= normalizer.batch_mean_and_sd(loaded_data)
@@ -51,28 +53,42 @@ data_transforms = {
     ]),
 }
 
-data_dir = os.path.join(os.path.curdir,"Data")
+# data directory path
+data_dir = os.path.join(os.path.curdir,"hymenoptera_data")      # actual road data is in Data
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=10,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=5,
                                              shuffle=True, num_workers=0)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
 class_names = image_datasets['train'].classes
+print("class names /:",class_names)
 device = torch.device("cuda:0") # if torch.cuda.is_available() else "cpu")
-#print(class_names)
 inputs, classes = next(iter(dataloaders['train']))
-out = torchvision.utils.make_grid(inputs)
+#out = torchvision.utils.make_grid(inputs)
 
 #imshow(out, title=[class_names[x] for x in classes])
 #print(image_datasets['val'].class_to_idx)
+def AddNoise(Inputs):
+    noise_shape = np.shape(Inputs)
+
+    noise = np.random.normal(0, 0.5, noise_shape)       #np.random.normal(mean, variance, shape)
+    noise = torch.from_numpy(noise)
+    noise = noise.type(torch.float)
+    inputs = Inputs + noise
+
+    return inputs
 
 def train_model(model, criterion, optimizer, scheduler, num_epochs):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+    losses_v = []       #validation losses for each epoch
+    losses_t = []       #training loss for each epoch
+    acc_t = []          #training accuracy
+    acc_v = []          #validation accuracy
 
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -93,7 +109,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
             #itr = 0
             for inputs, labels in dataloaders[phase]:
 
-                out = torchvision.utils.make_grid(inputs)
+                #out = torchvision.utils.make_grid(inputs)
                 #imshow(out, title=[x for x in labels.cpu().detach().numpy()])
 
             #     print(type(inputs))
@@ -108,9 +124,14 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 #labels = labels.type(torch.float32)
                 #labels = torch.unsqueeze(labels,1)
                 #print(labels)
+                if phase == 'train':
+                    inputs = AddNoise(inputs)
                 inputs = inputs.to(device)
                 labels = labels.to(device)
-                soft_max = nn.Softmax(dim=0)
+
+                # to be used only with Binary Cross Entropy loss, Cross Entropy loss implements soft_max
+                # activation internally
+                #soft_max = nn.Softmax(dim=0)
                 #sigmoid = nn.Sigmoid()
 
                 # forward
@@ -118,7 +139,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
                     #print(outputs)
-                    outputs = soft_max(outputs)
+                    #outputs = sigmoid(outputs)
                     #print(outputs.shape)
                     _, preds = torch.max(outputs, 1)
                     #print(preds)
@@ -142,8 +163,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
 
             if phase == 'train':
                 scheduler.step()
+                epoch_loss_t = running_loss / dataset_sizes[phase]      #train loss
+                epoch_acc_t = running_corrects.double() / dataset_sizes[phase]
 
-            epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_loss = running_loss / dataset_sizes[phase]            #loss for both phases but appended loss is validation loss
+
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
@@ -153,9 +177,28 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-
+        losses_v.append(epoch_loss)
+        losses_t.append(epoch_loss_t)
+        acc_v.append(epoch_acc.detach().cpu().tolist())             #t.detach().cpu().numpy()
+        acc_t.append(epoch_acc_t.detach().cpu().tolist())
         print()
-
+    plt.figure(1)
+    plt.title("Loss Curve", fontsize=16)
+    plt.xlabel("epochs", fontsize=12)
+    plt.ylabel("Loss", fontsize=12)
+    plt.plot(losses_v, label="Val loss")
+    plt.plot(losses_t, label ="Train Loss")
+    plt.legend(loc="upper right")
+    plt.figure(2)
+    plt.title("Accuracy", fontsize=16)
+    plt.xlabel("epochs", fontsize=12)
+    plt.ylabel("accuracy", fontsize=12)
+    plt.plot(acc_v, label="Val accuaracy")
+    plt.plot(acc_t, label="Train accuaracy")
+    plt.legend(loc="lower right")
+    plt.show()
+    #print("training accuracy /:", acc_t)
+    #print("Validation accuracy /:", acc_v)
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
@@ -163,15 +206,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-
-    # for name, param in model.named_parameters():
-    #     if param.requires_grad:
-    #         print(name)
-    #     else:
-    #         print("requires_grad the layer is set to false")
-
-    #print(best_model_wts)
-    #print(model)
     return model
 
 model = torchvision.models.vgg16(pretrained=True)
@@ -194,14 +228,12 @@ model_conv = model.to(device)
 #criterion = nn.BCELoss()
 criterion = nn.CrossEntropyLoss()
 
-# Observe that only parameters of final layer are being optimized as
-# opposed to before.
 optimizer = optim.SGD(model_conv.parameters(), lr=0.0001, momentum=0.9)
 
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 model_conv = train_model(model_conv, criterion, optimizer,
-                         exp_lr_scheduler, num_epochs=200)
+                         exp_lr_scheduler, num_epochs=10)
 
 
