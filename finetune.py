@@ -73,7 +73,7 @@ inputs, classes = next(iter(dataloaders['train']))
 def AddNoise(Inputs):
     noise_shape = np.shape(Inputs)
 
-    noise = np.random.normal(0, 0.5, noise_shape)       #np.random.normal(mean, variance, shape)
+    noise = np.random.normal(0, 0.2, noise_shape)       #np.random.normal(mean, variance, shape)
     noise = torch.from_numpy(noise)
     noise = noise.type(torch.float)
     inputs = Inputs + noise
@@ -150,7 +150,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                     # backward + optimize only if in training phase
                     if phase == 'train':
                         optimizer.zero_grad()
+                        # print("before backprop :/", model.features[0].weight.grad)    #check .grad attribute of frozen layers
                         loss.backward()
+                        # print("after backprop :/", model.features[0].weight.grad)     #check .grad attribute of frozen layers
                         optimizer.step()
 
                 # statistics
@@ -189,6 +191,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
     plt.plot(losses_v, label="Val loss")
     plt.plot(losses_t, label ="Train Loss")
     plt.legend(loc="upper right")
+
     plt.figure(2)
     plt.title("Accuracy", fontsize=16)
     plt.xlabel("epochs", fontsize=12)
@@ -209,31 +212,48 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
     return model
 
 model = torchvision.models.vgg16(pretrained=True)
-#print(model)
+print(model)
 
 for name, param in model.named_parameters():
-     if param.requires_grad and 'features' in name:
-        param.requires_grad = False
+     if param.requires_grad and "features" in name:
+         if name == "features.26.weight" or name == "features.26.bias" or name == "features.28.weight" or name == "features.28.bias":
+            param.requires_grad = True
+         else:
+            param.requires_grad = False
+
+print(model.features[28])
 
 model.classifier[6]= nn.Linear(4096, 2)
+nn.init.xavier_uniform_(model.classifier[6].weight)
+#nn.init.xavier_uniform_(model.classifier[6].bias)
 #print(model)
 for name, param in model.named_parameters():
     if param.requires_grad:
         print(name)
     else:
-        print("requires_grad on this layer is set to false")
+        print(f"requires_grad on {name} is false")
 #print(model.state_dict())
+#print(model.features[26].parameters())
 model_conv = model.to(device)
 
 #criterion = nn.BCELoss()
 criterion = nn.CrossEntropyLoss()
 
-optimizer = optim.SGD(model_conv.parameters(), lr=0.0001, momentum=0.9)
+# optimizer = optim.SGD(model_conv.parameters(), lr=0.00001, momentum=0.9)
 
+optimizer = optim.SGD(
+    [
+        {"params": model.features[26].parameters()},
+        {"params": model.features[28].parameters()},
+        {"params": model.classifier[0].parameters()},
+        {"params": model.classifier[3].parameters()},
+        {"params": model.classifier[6].parameters(), "lr": 0.00001},
+    ], lr = 0.0000001, momentum=0.9
+)
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.1)
 
 model_conv = train_model(model_conv, criterion, optimizer,
-                         exp_lr_scheduler, num_epochs=10)
+                         exp_lr_scheduler, num_epochs=120)
 
 
