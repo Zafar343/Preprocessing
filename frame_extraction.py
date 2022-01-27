@@ -3,13 +3,13 @@ import cv2
 import os
 
 # Read the video from specified path
-cam = cv2.VideoCapture("./../../img/manual_roaddata/1.mp4")
+cam = cv2.VideoCapture("./../../img/1.mp4")
 
 try:
 
     # creating a folder named data
-    if not os.path.exists('./../../img/manual_roaddata/vid_1'):
-        os.makedirs('./../../img/manual_roaddata/vid_1')
+    if not os.path.exists('./../../img/vid_1'):
+        os.makedirs('./../../img/vid_1')
 
 # if not created then raise error
 except OSError:
@@ -32,7 +32,7 @@ while (True):
         if i > frame_skip - 1:
 
         # if video is still left continue creating images
-            name = './../../img/manual_roaddata/vid_1/frame' + str(currentframe) + '.jpg'
+            name = './../../img/vid_1/frame' + str(currentframe) + '.jpg'
             print('Creating...' + name)
 
         # writing the extracted images
