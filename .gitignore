@@ -17,10 +17,11 @@ bin-release/
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
 .idea/
-#Data/
-#Data_set1/
-#Data_set2/
+Data/
+Data_set1/
+Data_set2/
 __pycache__/
-#hymenoptera_data/
+hymenoptera_data/
 japanTest1.avi
 frame_data/
+Weights/

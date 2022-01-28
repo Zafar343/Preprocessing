@@ -22,7 +22,7 @@ from torch.optim import lr_scheduler
 path = os.path.join(os.path.curdir,"Data_set2")        #Path for data normalization (actual road data is in Data_set2)
 
 # Calculating Mean and Std Deviation for the images. Needed for Data Normalization.
-normalizer = Normalize(path=path, batch_size=32)
+normalizer = Normalize(path=path, batch_size=64)
 loaded_data = normalizer.data_load()
 mean, std= normalizer.batch_mean_and_sd(loaded_data)
 print("mean and std: \n", mean, std)
@@ -59,7 +59,7 @@ data_dir = os.path.join(os.path.curdir,"Data")      # actual road data is in Dat
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=32,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=64,
                                              shuffle=True, num_workers=0)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -74,7 +74,7 @@ inputs, classes = next(iter(dataloaders['train']))
 def AddNoise(Inputs):
     noise_shape = np.shape(Inputs)
 
-    noise = np.random.normal(0, 1.0, noise_shape)       #np.random.normal(mean, variance, shape)
+    noise = np.random.normal(0, 0.12, noise_shape)       #np.random.normal(mean, variance, shape)
     noise = torch.from_numpy(noise)
     noise = noise.type(torch.float)
     inputs = Inputs + noise
@@ -113,20 +113,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 #out = torchvision.utils.make_grid(inputs)
                 #imshow(out, title=[x for x in labels.cpu().detach().numpy()])
 
-            #     print(type(inputs))
-            #for inputs, _ in dataloaders[phase]:
-                #print(inputs.size()[0])
-                # tensor1 = torch.ones(1, inputs.size()[0])
-                # tensor2 = torch.zeros(1, inputs.size()[0])
-                # labels = torch.cat(tensors=[tensor1, tensor2])
-                #
-                # labels = torch.transpose(labels, 0, 1)
-                #print(labels)
-                #labels = labels.type(torch.float32)
-                #labels = torch.unsqueeze(labels,1)
-                #print(labels)
-                if phase == 'train':
-                    inputs = AddNoise(inputs)
+                # if phase == 'train':
+                #     inputs = AddNoise(inputs)
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
@@ -255,6 +243,12 @@ optimizer = optim.SGD(
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=90, gamma=0.1)
 
 model_conv = train_model(model_conv, criterion, optimizer,
-                         exp_lr_scheduler, num_epochs=85)
+                         exp_lr_scheduler, num_epochs=130)
+
+if not os.path.exists("Weights"):
+    os.makedirs("Weights")
+# Saving the model
+save_path = "Weights/model_2.pth"
+torch.save(model.state_dict(), save_path)
 
 
