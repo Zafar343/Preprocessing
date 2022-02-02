@@ -22,7 +22,7 @@ from torch.optim import lr_scheduler
 path = os.path.join(os.path.curdir,"Data_set2")        #Path for data normalization (actual road data is in Data_set2)
 
 # Calculating Mean and Std Deviation for the images. Needed for Data Normalization.
-normalizer = Normalize(path=path, batch_size=64)
+normalizer = Normalize(path=path, batch_size=32)
 loaded_data = normalizer.data_load()
 mean, std= normalizer.batch_mean_and_sd(loaded_data)
 print("mean and std: \n", mean, std)
@@ -37,6 +37,7 @@ def imshow(inp, title):
     plt.title(title)
     plt.show()
 
+torch.manual_seed(17)
 # transforms on training and validation datasets
 data_transforms = {
     'train': transforms.Compose([
@@ -59,7 +60,7 @@ data_dir = os.path.join(os.path.curdir,"Data")      # actual road data is in Dat
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=64,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=32,
                                              shuffle=True, num_workers=0)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -67,14 +68,11 @@ class_names = image_datasets['train'].classes
 print("class names /:",class_names)
 device = torch.device("cuda:0") # if torch.cuda.is_available() else "cpu")
 inputs, classes = next(iter(dataloaders['train']))
-#out = torchvision.utils.make_grid(inputs)
 
-#imshow(out, title=[class_names[x] for x in classes])
-#print(image_datasets['val'].class_to_idx)
 def AddNoise(Inputs):
     noise_shape = np.shape(Inputs)
 
-    noise = np.random.normal(0, 0.12, noise_shape)       #np.random.normal(mean, variance, shape)
+    noise = np.random.normal(0, 0.10, noise_shape)       #np.random.normal(mean, variance, shape)
     noise = torch.from_numpy(noise)
     noise = noise.type(torch.float)
     inputs = Inputs + noise
@@ -106,8 +104,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
             running_loss = 0.0
             running_corrects = 0
 
-            # Iterate over data.
-            #itr = 0
             for inputs, labels in dataloaders[phase]:
 
                 #out = torchvision.utils.make_grid(inputs)
@@ -127,9 +123,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    #print(outputs)
-                    #outputs = sigmoid(outputs)
-                    #print(outputs.shape)
                     _, preds = torch.max(outputs, 1)
 
                     loss = criterion(outputs, labels)
@@ -145,10 +138,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 # statistics
                 #print(torch.sum(preds == labels.data))
                 running_loss += loss.item() * inputs.size(0)
-                #print(running_loss)
                 running_corrects += torch.sum(preds == labels.data)
                 #running_corrects += torch.sum(torch.tensor(preds, dtype=torch.float32) == labels.data[:, 0].cpu())
-                #print(dataset_sizes[phase])
 
             if phase == 'train':
                 scheduler.step()
@@ -171,7 +162,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
         acc_v.append(epoch_acc.detach().cpu().tolist())             #t.detach().cpu().numpy()
         acc_t.append(epoch_acc_t.detach().cpu().tolist())
         print()
-
+    print("Validation loss//: ", losses_v)
     plt.figure(1)
     plt.title("Loss Curve 1.0", fontsize=16)
     plt.xlabel("epochs", fontsize=12)
@@ -188,8 +179,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
     plt.plot(acc_t, label="Train accuaracy")
     plt.legend(loc="lower right")
     plt.show()
-    #print("training accuracy /:", acc_t)
-    #print("Validation accuracy /:", acc_v)
+
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
@@ -202,19 +192,21 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
 model = torchvision.models.vgg16(pretrained=True)
 print(model)
 
+# for name, param in model.named_parameters():
+#      if param.requires_grad and "features" in name or param.requires_grad and "classifier" in name:
+#          if name == "classifier.6.weight" or name == "classifier.6.bias" or name == "classifier.3.weight" or name == "classifier.3.bias":
+#             param.requires_grad = True
+#          else:
+#             param.requires_grad = False
 for name, param in model.named_parameters():
-     if param.requires_grad and "features" in name:
-         if name == "features.26.weight" or name == "features.26.bias" or name == "features.28.weight" or name == "features.28.bias":
-            param.requires_grad = True
-         else:
-            param.requires_grad = False
-
-#print(model.features[28])
+    if param.requires_grad and "features" in name:
+        param.requires_grad = False
 
 model.classifier[6]= nn.Linear(4096, 2)
+nn.init.normal_(model.classifier[6].weight, mean=0, std=1.0)
 #nn.init.xavier_uniform_(model.classifier[6].weight)
-model.classifier[6].weight.data.fill_(0.0001)
-model.classifier[6].bias.data.fill_(0.0001)
+#model.classifier[6].weight.data.fill_(0.0001)
+model.classifier[6].bias.data.fill_(0.0)
 #print(model)
 for name, param in model.named_parameters():
     if param.requires_grad:
@@ -225,30 +217,27 @@ for name, param in model.named_parameters():
 #print(model.features[26].parameters())
 model_conv = model.to(device)
 
-#criterion = nn.BCELoss()
 criterion = nn.CrossEntropyLoss()
 
-# optimizer = optim.SGD(model_conv.parameters(), lr=0.00001, momentum=0.9)
+# optimizer = optim.SGD(model_conv.parameters(), lr=0.001, momentum=0.9)
 
 optimizer = optim.SGD(
     [
-        {"params": model.features[26].parameters()},
-        {"params": model.features[28].parameters()},
         {"params": model.classifier[0].parameters()},
         {"params": model.classifier[3].parameters()},
         {"params": model.classifier[6].parameters(), "lr": 0.001},
-    ], lr = 0.00001, momentum=0.9
+    ], lr = 0.000001, momentum=0.9
 )
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=90, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=170, gamma=0.1)
 
 model_conv = train_model(model_conv, criterion, optimizer,
-                         exp_lr_scheduler, num_epochs=130)
+                         exp_lr_scheduler, num_epochs=160)
 
 if not os.path.exists("Weights"):
     os.makedirs("Weights")
 # Saving the model
-save_path = "Weights/model_2.pth"
+save_path = "Weights/model_best.pth"
 torch.save(model.state_dict(), save_path)
 
 
