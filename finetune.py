@@ -60,7 +60,7 @@ data_dir = os.path.join(os.path.curdir,"Data")      # actual road data is in Dat
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=32,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=2,
                                              shuffle=True, num_workers=0)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -106,9 +106,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
 
             for inputs, labels in dataloaders[phase]:
 
-                #out = torchvision.utils.make_grid(inputs)
-                #imshow(out, title=[x for x in labels.cpu().detach().numpy()])
-
+                # out = torchvision.utils.make_grid(inputs)
+                # imshow(out, title=[x for x in labels.cpu().detach().numpy()])
                 # if phase == 'train':
                 #     inputs = AddNoise(inputs)
                 inputs = inputs.to(device)
@@ -124,7 +123,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
                     _, preds = torch.max(outputs, 1)
-
                     loss = criterion(outputs, labels)
 
                     # backward + optimize only if in training phase
