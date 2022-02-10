@@ -57,7 +57,7 @@ pred_list = []      #list to store the pridictions of model on test data to be u
 path = os.path.join(os.path.curdir,"Data/Test")     #path to test set
 #infering on each image
 for filename in tqdm.tqdm(os.listdir(path)):
-        img = Image.open(os.path.join(path,filename))
+        img = Image.open(os.path.join(path,filename))   #.convert('RGB')
         _id = int(filename.split('.')[0])
         #print(_id)
         img = transform(img)
@@ -87,7 +87,7 @@ print(res)
 id_list = []
 class_ = {0: 'Valid Image', 1: 'Invalid Image'}     #our actual classes
 
-fig, axes = plt.subplots(2, 5, figsize=(20, 12), facecolor='w')
+fig, axes = plt.subplots(2, 5, figsize=(20, 10), facecolor='w')
 
 for ax in axes.ravel():
 
@@ -105,4 +105,4 @@ for ax in axes.ravel():
     ax.set_title(class_[label])
     ax.imshow(img)
     plt.pause(1)
-#plt.show()
+plt.show()
