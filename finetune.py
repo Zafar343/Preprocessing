@@ -2,16 +2,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torchvision
-from torchvision import models, transforms, datasets
+from torchvision import transforms, datasets
 import matplotlib.pyplot as plt
-import cv2
 import os
-from PIL import Image
-from sklearn import svm
-from sklearn import metrics
-import tqdm
 from normalize import Normalize
-import torchextractor as tx
 import time
 import copy
 import torch.optim as optim

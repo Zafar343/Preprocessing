@@ -3,6 +3,7 @@ import pandas as pd
 #from PIL import Image
 import cv2 as cv
 import os
+import PyQt5
 from matplotlib import pyplot as plt
 
 
@@ -12,10 +13,11 @@ print(df)
 path = os.path.join(os.path.curdir, "Data/Test")
 for filename in os.listdir(path):
     id_ = int(filename.split('.')[0])
-    #print(id_)
     #print(df.iat[id_-1,1])
     img = cv.imread(os.path.join(path, filename))
-    cv.imshow(str(df.iat[id_-1,1]), img)
+    #print("Current Image:/ ",id_)
+    cv.imshow("Image_id="+str(id_)+" /  label="+str(df.iat[id_-1,1]), img)
     cv.waitKey(0)
     cv.destroyAllWindows()
+
 

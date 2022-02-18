@@ -2,17 +2,12 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torchvision
-from torchvision import models, transforms, datasets
+from torchvision import transforms
 import matplotlib.pyplot as plt
-import cv2
 import os, random
 from PIL import Image
-from sklearn import svm
-from sklearn import metrics
 import tqdm
 from normalize import Normalize
-import time
-import copy
 import torch.nn.functional as F
 import pandas as pd
 
@@ -44,9 +39,9 @@ transform = transforms.Compose([
     ])
 
 device = torch.device("cuda:0")         #setting device to cuda
-model = torchvision.models.vgg16()      #initializing the model with random weights (this is our model blue print)
-model.classifier[6]= nn.Linear(4096, 2) #changing blue print final layer according to oure requirement
-print(model)
+model = torchvision.models.vgg16()      #initializing the model with random weights (this is our model blueprint)
+model.classifier[6]= nn.Linear(4096, 2) #changing blueprint final layer according to oure requirement
+#print(model)
 model.to(device)                    # setting model to GPU
 model.load_state_dict(torch.load("Weights/model_best.pth"))     # loading our trained weights and biases into the blueprint model
 
@@ -54,7 +49,7 @@ model.load_state_dict(torch.load("Weights/model_best.pth"))     # loading our tr
 #inference starts here
 id_list = []        #list to store image id to be used at later stage
 pred_list = []      #list to store the pridictions of model on test data to be used for actual classification and visualization
-path = os.path.join(os.path.curdir,"Data/Test")     #path to test set
+path = os.path.join(os.path.curdir,"Data/test2")     #path to test set
 #infering on each image
 for filename in tqdm.tqdm(os.listdir(path)):
         img = Image.open(os.path.join(path,filename))   #.convert('RGB')
@@ -69,7 +64,7 @@ for filename in tqdm.tqdm(os.listdir(path)):
         model.eval()            #setting the model to evalution mode
         outputs = model(img)    #inference
         preds = F.softmax(outputs, dim=1)[:, 1].tolist()        # classification
-        #print(preds)
+        print(preds)
 
         id_list.append(_id)
         pred_list.append(preds[0])
@@ -81,7 +76,8 @@ res = pd.DataFrame({
 
 res.sort_values(by='id', inplace=True)
 res.reset_index(drop=True, inplace=True)
-print(res)
+#res.to_csv("predictions.csv")
+#print(res)
 
 #________________Visualize Prediction_____________________________________________
 id_list = []
@@ -94,7 +90,7 @@ for ax in axes.ravel():
     i = random.choice(res['id'].values)
 
     label = res.loc[res['id'] == i, 'label'].values[0]
-    if label > 0.5:
+    if label > 0.5:             # label 1 is for invalid class as we are storing coulmn 1 which corresponds to invalid class
         label = 1
     else:
         label = 0
