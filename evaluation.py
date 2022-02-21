@@ -23,14 +23,14 @@ for i in range(preds.shape[0]):
 print(scores)
 
 ###ROC-AUC___________________________________________
-# fpr, tpr, thresholds = metrics.roc_curve(labels, preds)
-# area_under_curve = metrics.auc(fpr, tpr)
-# print(area_under_curve)
-# plt.plot(fpr,tpr,label= "AUC= "+str(area_under_curve))
-# plt.xlabel('False Positive Rate')
-# plt.ylabel('True Positive Rate')
-# plt.legend(loc=4)
-# plt.show()
+fpr, tpr, thresholds = metrics.roc_curve(labels, preds)
+area_under_curve = metrics.auc(fpr, tpr)
+print(area_under_curve)
+plt.plot(fpr,tpr,label= "AUC= "+str(area_under_curve))
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc=4)
+plt.show()
 #_____________________________________________________________
 
 #Confusion Matrix_____________________________________________

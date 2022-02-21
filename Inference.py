@@ -69,7 +69,7 @@ for filename in tqdm.tqdm(os.listdir(path)):
         _id = int(filename.split('.')[0])
         #print(_id)
         preds = infer(img=img, model=model)
-
+        #print(preds)
         id_list.append(_id)
         pred_list.append(preds[0])
 # making a data frame containing image id and prediction result
@@ -87,7 +87,7 @@ res.reset_index(drop=True, inplace=True)
 id_list = []
 class_ = {0: 'Valid Image', 1: 'Invalid Image'}     #our actual classes
 
-fig, axes = plt.subplots(2, 5, figsize=(20, 10), facecolor='w')
+fig, axes = plt.subplots(3, 6, figsize=(10, 10), facecolor='w')
 
 for ax in axes.ravel():
 
