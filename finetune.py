@@ -5,7 +5,7 @@ import torchvision
 from torchvision import transforms, datasets
 import matplotlib.pyplot as plt
 import os
-from normalize import Normalize
+from normalize import Normalization
 import time
 import copy
 import torch.optim as optim
@@ -16,7 +16,7 @@ from torch.optim import lr_scheduler
 path = os.path.join(os.path.curdir,"Data_set2")        #Path for data normalization (actual road data is in Data_set2)
 
 # Calculating Mean and Std Deviation for the images. Needed for Data Normalization.
-normalizer = Normalize(path=path, batch_size=32)
+normalizer = Normalization(path=path, batch_size=32)
 loaded_data = normalizer.data_load()
 mean, std= normalizer.batch_mean_and_sd(loaded_data)
 print("mean and std: \n", mean, std)

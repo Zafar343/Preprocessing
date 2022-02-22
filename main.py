@@ -9,13 +9,13 @@ from PIL import Image
 from sklearn import svm
 from sklearn import metrics
 import tqdm
-from normalize import Normalize
+from normalize import Normalization
 import torchextractor as tx
 
 path = os.path.join(os.path.curdir,"Data/train")
 
 # Calculating Mean and Std Diviation for the images. Needed for Data Normalization.
-normalizer = Normalize(path=path, batch_size=10)
+normalizer = Normalization(path=path, batch_size=10)
 loaded_data = normalizer.data_load()
 mean, std= normalizer.batch_mean_and_sd(loaded_data)
 print("mean and std: \n", mean, std)

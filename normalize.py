@@ -6,7 +6,7 @@ import os
 import tqdm
 
 
-class Normalize:
+class Normalization:
     """
         This class calculates the Mean and Standard Deviation for all images in a dataset
     """

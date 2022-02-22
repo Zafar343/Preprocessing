@@ -9,9 +9,17 @@ from PIL import Image
 import tqdm
 import torch.nn.functional as F
 import pandas as pd
+from normalize import Normalization
+
+normalizer = Normalization(path=os.path.join(os.path.curdir, "Data_set2"), batch_size=32)
+loaded_data = normalizer.data_load()
+mean, std = normalizer.batch_mean_and_sd(loaded_data)
+
 
 def Imshow(inp):
+
     """Imshow for Tensor."""
+
     inp = inp.numpy().transpose((1, 2, 0))
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
@@ -20,11 +28,11 @@ def Imshow(inp):
     plt.imshow(inp)
     plt.show()
 
-
 def blueprint():
 
     '''function to make blueprint model based on VGG16 and load trained weights'''
 
+    print("///:Building model blueprint and loading trained weights")
     model = torchvision.models.vgg16()  # initializing the model with random weights (this is our model blueprint)
     model.classifier[6] = nn.Linear(4096, 2)  # changing blueprint final layer according to oure requirement
     # print(model)
@@ -42,7 +50,11 @@ def infer(img, model):
     transform = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
-            transforms.ToTensor()
+            transforms.ToTensor(),
+            transforms.Normalize(
+            mean = mean,
+            std = std
+            )
         ])
     device = torch.device("cuda:0")         #setting device to cuda
     model.to(device)  # setting model to GPU
