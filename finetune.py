@@ -12,15 +12,16 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 
 
-# path for mean and standard deviation calculation
-path = os.path.join(os.path.curdir,"Data_set2")        #Path for data normalization (actual road data is in Data_set2)
-
-# Calculating Mean and Std Deviation for the images. Needed for Data Normalization.
-normalizer = Normalization(path=path, batch_size=32)
-loaded_data = normalizer.data_load()
-mean, std= normalizer.batch_mean_and_sd(loaded_data)
-print("mean and std: \n", mean, std)
-
+# # path for mean and standard deviation calculation
+# path = os.path.join(os.path.curdir,"Data_set2")        #Path for data normalization (actual road data is in Data_set2)
+#
+# # Calculating Mean and Std Deviation for the images. Needed for Data Normalization.
+# normalizer = Normalization(path=path, batch_size=32)
+# loaded_data = normalizer.data_load()
+# mean, std= normalizer.batch_mean_and_sd(loaded_data)
+# print("mean and std: \n", mean, std)
+mean = np.array([0.485, 0.456, 0.406])
+std = std = np.array([0.229, 0.224, 0.225])
 
 def imshow(inp, title):
     """Imshow for Tensor."""
@@ -229,7 +230,7 @@ model_conv = train_model(model_conv, criterion, optimizer,
 if not os.path.exists("Weights"):
     os.makedirs("Weights")
 # Saving the model
-save_path = "Weights/model_best.pth"
+save_path = "Weights/model_best2.pth"
 torch.save(model.state_dict(), save_path)
 
 
