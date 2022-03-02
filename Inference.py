@@ -34,6 +34,8 @@ def Imshow(inp):
     inp = np.clip(inp, 0, 1)
     plt.imshow(inp)
     plt.show()
+    #plt.pause(5)
+    #plt.close()
 
 def blueprint():
 
@@ -67,8 +69,9 @@ def infer(img, model, transform, device):
     model.to(device)  # setting model to GPU
 
     img = transform(img)
-    img = img.unsqueeze(0)
+    Imshow(img)
     # print(img.shape)
+    img = img.unsqueeze(0)
     img = img.to(device)
     model.eval()  # setting the model to evaluation mode
     outputs = model(img)  # inference
@@ -143,16 +146,21 @@ with open("out_0.json", 'r') as f:
         image = Image.open(io.BytesIO(imgdata))
         frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
         frame = Image.fromarray(frame)
-        # frame.show()
+        width, height = frame.size
+        #print(width,height)
+        #frame = torch.unsqueeze(frame,0)
+        #Imshow(frame)
+        #frame.show()
         preds = infer(img =frame, model=model, transform=transform, device=device)
         pred_list.append(preds[0])
         print('working')
-        # cv2.imshow("Image= "+str(preds[0]),np.array(image))
-        # cv2.waitKey(3000)
+        # cv2.imshow("Abnormal Image " if preds[0]>0.5 else "Normal Image",np.array(image))
+        # cv2.waitKey(0)
         # cv2.destroyAllWindows()
 #print(len(pred_list))
 count = 0
 for i in range(len(pred_list)):
+    print(pred_list[i])
     if pred_list[i]>0.5:
         #print(pred_list[i])
         count = count+1

@@ -7,23 +7,24 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import numpy as np
 
 
-df = pd.read_csv(os.path.join(os.path.curdir,"predictions_test.csv"))
+df = pd.read_csv(os.path.join(os.path.curdir,"OCSVM_scoresFeatureLayer.csv"))
 df.reset_index(drop=True, inplace=True)
 #print(df)
 preds = df.iloc[:,1].to_numpy()         # array of predictions
+print(preds)
 labels = pd.read_csv(os.path.join(os.path.curdir, "test_labels.csv"))
 labels = labels.iloc[:,1].to_numpy()            # array of test labels
-#print(labels))
+print(labels)
 scores = np.zeros_like(preds)           #scores based on predictions on test data
 for i in range(preds.shape[0]):
-    if preds[i] > 0.5:
-      scores[i] = 1.0
+    if preds[i] > 0:
+      scores[i] = 0
     else:
-        scores[i] = 0
+        scores[i] = 1
 print(scores)
 
 ###ROC-AUC___________________________________________
-fpr, tpr, thresholds = metrics.roc_curve(labels, preds)
+fpr, tpr, thresholds = metrics.roc_curve(labels, preds, pos_label=0)
 area_under_curve = metrics.auc(fpr, tpr)
 print(area_under_curve)
 plt.plot(fpr,tpr,label= "AUC= "+str(area_under_curve))
