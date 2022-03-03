@@ -12,6 +12,12 @@ import cv2
 import tqdm
 from PIL import Image
 import pandas as pd
+import json
+import re
+import io
+import base64
+import pickle
+
 
 mean=np.array([0.47582975, 0.4897879, 0.4882829])
 std=np.array([0.2630566, 0.2686199, 0.28436255])
@@ -140,41 +146,67 @@ print("OCSVM is trained")
 
 #Prediction phase
 test_score = []
-id = []
-path = os.path.join(os.path.curdir,"Data/Test")
-for filename in tqdm.tqdm(os.listdir(path)):
-    _id = int(filename.split('.')[0])
-    img = cv2.imread(os.path.join(path,filename))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    Pil_img = Image.fromarray(img)
-    Pil_img = transform(Pil_img)
-    #print(img.size())
-    Pil_img = torch.unsqueeze(Pil_img,0)
-    Pil_img = Pil_img.to(device)
-    # We only extract features, so we don't need gradient
-    with torch.no_grad():
-        # Extract the feature from the image
-        feature = F_extractor(Pil_img)
-    # Convert to NumPy Array, Reshape it, and save it to features variable
-    feature = feature.cpu().detach().numpy().reshape(-1)
-        #cv2.destroyAllWindows()
-    feature = np.array(feature)
-    # print(feature.shape)
-    # ----------- Feature Extraction Complete
-
-    # One Class Calssification
-    score = ocsvm_classifier.decision_function([feature])
-    #print(score)
-    test_score.append(score[0])
-    id.append(_id)
-#print(len(test_score))
-# making a data frame containing image id and prediction result
-res = pd.DataFrame({
-    'id': id,
-    'test_score': test_score
-})
-
-res.sort_values(by='id', inplace=True)
-res.reset_index(drop=True, inplace=True)
-res.to_csv("OCSVM_scoresfc1.csv")
+# id = []
+# path = os.path.join(os.path.curdir,"Data/Test")
+# for filename in tqdm.tqdm(os.listdir(path)):
+#     _id = int(filename.split('.')[0])
+#     img = cv2.imread(os.path.join(path,filename))
+#     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#     Pil_img = Image.fromarray(img)
+#     Pil_img = transform(Pil_img)
+#     #print(img.size())
+#     Pil_img = torch.unsqueeze(Pil_img,0)
+#     Pil_img = Pil_img.to(device)
+#     # We only extract features, so we don't need gradient
+#     with torch.no_grad():
+#         # Extract the feature from the image
+#         feature = F_extractor(Pil_img)
+#     # Convert to NumPy Array, Reshape it, and save it to features variable
+#     feature = feature.cpu().detach().numpy().reshape(-1)
+#         #cv2.destroyAllWindows()
+#     feature = np.array(feature)
+#     # print(feature.shape)
+#     # ----------- Feature Extraction Complete
+#
+#     # One Class Calssification
+#     score = ocsvm_classifier.decision_function([feature])
+#     #print(score)
+#     test_score.append(score[0])
+#     id.append(_id)
+# #print(len(test_score))
+# # making a data frame containing image id and prediction result
+# res = pd.DataFrame({
+#     'id': id,
+#     'test_score': test_score
+# })
+#
+# res.sort_values(by='id', inplace=True)
+# res.reset_index(drop=True, inplace=True)
+# res.to_csv("OCSVM_scoresfc1.csv")
 # print(res)
+with open("out_0.json", 'r') as f:
+    data = json.loads(f.read())
+    frames_list = pd.json_normalize(data, record_path=['frames'])
+    loop = len(frames_list)
+    for i in range(loop):
+        image_string = frames_list['frame'][i]
+        result = re.search("data:image/(?P<ext>.*?);base64,(?P<data>.*)", image_string, re.DOTALL)
+        if result:
+            ext = result.groupdict().get("ext")
+            data = result.groupdict().get("data")
+        else:
+            raise Exception("Do not parse!")
+        imgdata = base64.b64decode(str(data))
+        image = Image.open(io.BytesIO(imgdata))
+        frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
+        frame = Image.fromarray(frame)
+        Pil_img = transform(frame)
+        Pil_img = torch.unsqueeze(Pil_img, 0)
+        Pil_img = Pil_img.to(device)
+        with torch.no_grad():
+            feature = F_extractor(Pil_img)
+        feature = feature.cpu().detach().numpy().reshape(-1)
+        feature = np.array(feature)
+        score = ocsvm_classifier.decision_function([feature])
+        print(score)
+        plt.pause(3)
