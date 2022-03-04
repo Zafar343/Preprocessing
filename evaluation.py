@@ -7,7 +7,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import numpy as np
 
 
-df = pd.read_csv(os.path.join(os.path.curdir,"OCSVM_scoresFeatureLayer.csv"))
+df = pd.read_csv(os.path.join(os.path.curdir,"OCSVM_scoresfc1.csv"))
 df.reset_index(drop=True, inplace=True)
 #print(df)
 preds = df.iloc[:,1].to_numpy()         # array of predictions

@@ -142,71 +142,75 @@ print(features.shape)
 
 ocsvm_classifier = svm.OneClassSVM(kernel='rbf', gamma='scale' , nu=0.08) # nu: describes classification line. Value is: b/w 0 and 1
 ocsvm_classifier.fit(features)
-print("OCSVM is trained")
+print("OCSVM classifier is trained")
+filename = 'OCSVM_model.sav'
+pickle.dump(ocsvm_classifier, open(filename, 'wb'))
+print("trained classifier is saved")
 
 #Prediction phase
+classifier = pickle.load(open("OCSVM_model.sav", 'rb'))
 test_score = []
-# id = []
-# path = os.path.join(os.path.curdir,"Data/Test")
-# for filename in tqdm.tqdm(os.listdir(path)):
-#     _id = int(filename.split('.')[0])
-#     img = cv2.imread(os.path.join(path,filename))
-#     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-#     Pil_img = Image.fromarray(img)
-#     Pil_img = transform(Pil_img)
-#     #print(img.size())
-#     Pil_img = torch.unsqueeze(Pil_img,0)
-#     Pil_img = Pil_img.to(device)
-#     # We only extract features, so we don't need gradient
-#     with torch.no_grad():
-#         # Extract the feature from the image
-#         feature = F_extractor(Pil_img)
-#     # Convert to NumPy Array, Reshape it, and save it to features variable
-#     feature = feature.cpu().detach().numpy().reshape(-1)
-#         #cv2.destroyAllWindows()
-#     feature = np.array(feature)
-#     # print(feature.shape)
-#     # ----------- Feature Extraction Complete
-#
-#     # One Class Calssification
-#     score = ocsvm_classifier.decision_function([feature])
-#     #print(score)
-#     test_score.append(score[0])
-#     id.append(_id)
-# #print(len(test_score))
-# # making a data frame containing image id and prediction result
-# res = pd.DataFrame({
-#     'id': id,
-#     'test_score': test_score
-# })
-#
-# res.sort_values(by='id', inplace=True)
-# res.reset_index(drop=True, inplace=True)
-# res.to_csv("OCSVM_scoresfc1.csv")
-# print(res)
-with open("out_0.json", 'r') as f:
-    data = json.loads(f.read())
-    frames_list = pd.json_normalize(data, record_path=['frames'])
-    loop = len(frames_list)
-    for i in range(loop):
-        image_string = frames_list['frame'][i]
-        result = re.search("data:image/(?P<ext>.*?);base64,(?P<data>.*)", image_string, re.DOTALL)
-        if result:
-            ext = result.groupdict().get("ext")
-            data = result.groupdict().get("data")
-        else:
-            raise Exception("Do not parse!")
-        imgdata = base64.b64decode(str(data))
-        image = Image.open(io.BytesIO(imgdata))
-        frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
-        frame = Image.fromarray(frame)
-        Pil_img = transform(frame)
-        Pil_img = torch.unsqueeze(Pil_img, 0)
-        Pil_img = Pil_img.to(device)
-        with torch.no_grad():
-            feature = F_extractor(Pil_img)
-        feature = feature.cpu().detach().numpy().reshape(-1)
-        feature = np.array(feature)
-        score = ocsvm_classifier.decision_function([feature])
-        print(score)
-        plt.pause(3)
+id = []
+path = os.path.join(os.path.curdir,"Data/Test")
+for filename in tqdm.tqdm(os.listdir(path)):
+    _id = int(filename.split('.')[0])
+    img = cv2.imread(os.path.join(path,filename))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    Pil_img = Image.fromarray(img)
+    Pil_img = transform(Pil_img)
+    #print(img.size())
+    Pil_img = torch.unsqueeze(Pil_img,0)
+    Pil_img = Pil_img.to(device)
+    # We only extract features, so we don't need gradient
+    with torch.no_grad():
+        # Extract the feature from the image
+        feature = F_extractor(Pil_img)
+    # Convert to NumPy Array, Reshape it, and save it to features variable
+    feature = feature.cpu().detach().numpy().reshape(-1)
+        #cv2.destroyAllWindows()
+    feature = np.array(feature)
+    # print(feature.shape)
+    # ----------- Feature Extraction Complete
+
+    # One Class Calssification
+    score = classifier.decision_function([feature])
+    #print(score)
+    test_score.append(score[0])
+    id.append(_id)
+#print(len(test_score))
+# making a data frame containing image id and prediction result
+res = pd.DataFrame({
+    'id': id,
+    'test_score': test_score
+})
+
+res.sort_values(by='id', inplace=True)
+res.reset_index(drop=True, inplace=True)
+res.to_csv("OCSVM_scoresNfc1.csv")
+print(res)
+# with open("out_0.json", 'r') as f:
+#     data = json.loads(f.read())
+#     frames_list = pd.json_normalize(data, record_path=['frames'])
+#     loop = len(frames_list)
+#     for i in range(loop):
+#         image_string = frames_list['frame'][i]
+#         result = re.search("data:image/(?P<ext>.*?);base64,(?P<data>.*)", image_string, re.DOTALL)
+#         if result:
+#             ext = result.groupdict().get("ext")
+#             data = result.groupdict().get("data")
+#         else:
+#             raise Exception("Do not parse!")
+#         imgdata = base64.b64decode(str(data))
+#         image = Image.open(io.BytesIO(imgdata))
+#         frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
+#         frame = Image.fromarray(frame)
+#         Pil_img = transform(frame)
+#         Pil_img = torch.unsqueeze(Pil_img, 0)
+#         Pil_img = Pil_img.to(device)
+#         with torch.no_grad():
+#             feature = F_extractor(Pil_img)
+#         feature = feature.cpu().detach().numpy().reshape(-1)
+#         feature = np.array(feature)
+#         score = ocsvm_classifier.decision_function([feature])
+#         print(score)
+#         plt.pause(3)
