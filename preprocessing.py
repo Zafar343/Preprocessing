@@ -20,6 +20,7 @@ import pickle
 
 
 class FeatureExtractor(nn.Module):
+    """Builds Feature extractor model based on Finetuned model"""
     def __init__(self, model):
         super(FeatureExtractor, self).__init__()
         # Extract VGG-16 Feature Layers
@@ -52,7 +53,7 @@ class FeatureExtractor(nn.Module):
         return out
 
 class Model():
-
+    """Class to implement One Class SVM by using features extracted from finetuned VGG16"""
     def blueprint(self):
         '''function to make blueprint model based on VGG16 and load trained weights'''
 
@@ -62,6 +63,19 @@ class Model():
         print(model)
         model.load_state_dict(
             torch.load("Weights/model_best.pth"))  # loading our trained weights and biases into the blueprint model
+        return model
+
+    def extractor(self):
+        model = self.blueprint()
+        # print(model)
+        F_extractor = FeatureExtractor(model)
+        #print(F_extractor)
+        for name, param in F_extractor.named_parameters():
+            if param.requires_grad:  # and 'features' in name:
+                param.requires_grad = False
+
+        classifier = pickle.load(open("Weights/OCSVM_model.sav", 'rb'))
+        device = torch.device("cuda:0")  # setting device to cuda
         transform = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -71,51 +85,31 @@ class Model():
                 std=np.array([0.2630566, 0.2686199, 0.28436255])
             )
         ])
-        device = torch.device("cuda:0")  # setting device to cuda
-        return model, transform, device
+        return classifier, F_extractor, transform, device
 
-    def extractor(self):
-        print("extractor////")
-        model, transform, device = self.blueprint()
-        # print(model)
-        F_extractor = FeatureExtractor(model)
-        #print(F_extractor)
-        for name, param in F_extractor.named_parameters():
-            if param.requires_grad:  # and 'features' in name:
-                param.requires_grad = False
+    def classification(self, img, F_extractor, device, transform, classifier):
         F_extractor.to(device)
-        return F_extractor, transform, device
-
-    def classifier(self, path):
-        print("classifier///")
-        classifier = pickle.load(open("Weights/OCSVM_model.sav", 'rb'))
-        F_extractor, transform, device = self.extractor()
         print(F_extractor)
-        for filename in tqdm.tqdm(os.listdir(path)):
-            img = cv2.imread(os.path.join(path, filename))
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            Pil_img = Image.fromarray(img)
-            Pil_img = transform(Pil_img)
-            # print(img.size())
-            Pil_img = torch.unsqueeze(Pil_img, 0)
-            Pil_img = Pil_img.to(device)
-            # We only extract features, so we don't need gradient
-            with torch.no_grad():
-                # Extract the feature from the image
-                feature = F_extractor(Pil_img)
-            # Convert to NumPy Array, Reshape it, and save it to features variable
-            feature = feature.cpu().detach().numpy().reshape(-1)
-            feature = np.array(feature)
+        img = transform(img)
+        img = torch.unsqueeze(img, 0)
+        img = img.to(device)
+        with torch.no_grad():
+        # Extract the feature from the image
+            feature = F_extractor(img)
+        # Convert to NumPy Array, Reshape it, and save it to features variable
+        feature = feature.cpu().detach().numpy().reshape(-1)
+        feature = np.array(feature)
+        # One Class Classification
+        score = classifier.decision_function([feature])
 
-            # One Class Classification
-            score = classifier.decision_function([feature])
+        return score
 
 
-instance = Model()
-#extractor_model, transform, device = instance.extractor()
-#print(extractor_model)
-# print(transform)
-# print(device)
-score = instance.classifier(path= os.path.join(os.path.curdir,"Data/Test"))
-print(score)
+# instance = Model()
+# #extractor_model, transform, device = instance.extractor()
+# #print(extractor_model)
+# # print(transform)
+# # print(device)
+# score = instance.classifier(path= os.path.join(os.path.curdir,"Data/Test"))
+# print(score)
 
