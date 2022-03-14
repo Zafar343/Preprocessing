@@ -5,14 +5,15 @@ import torchvision
 from torchvision import transforms, datasets
 import matplotlib.pyplot as plt
 import os
-from normalize import Normalization
+#from normalize import Normalization
 import time
 import copy
 import torch.optim as optim
 from torch.optim import lr_scheduler
+import tqdm
 
 
-# # path for mean and standard deviation calculation
+# path for mean and standard deviation calculation
 # path = os.path.join(os.path.curdir,"Data_set2")        #Path for data normalization (actual road data is in Data_set2)
 #
 # # Calculating Mean and Std Deviation for the images. Needed for Data Normalization.
@@ -20,11 +21,13 @@ from torch.optim import lr_scheduler
 # loaded_data = normalizer.data_load()
 # mean, std= normalizer.batch_mean_and_sd(loaded_data)
 # print("mean and std: \n", mean, std)
-mean = np.array([0.485, 0.456, 0.406])
-std = std = np.array([0.229, 0.224, 0.225])
+mean=np.array([0.47582975, 0.4897879, 0.4882829])
+std=np.array([0.2630566, 0.2686199, 0.28436255])
 
 def imshow(inp, title):
     """Imshow for Tensor."""
+    mean = np.array([0.485, 0.456, 0.406])
+    std = std = np.array([0.229, 0.224, 0.225])
     inp = inp.numpy().transpose((1, 2, 0))
     inp = std * inp + mean
     inp = np.clip(inp, 0, 1)
@@ -55,7 +58,7 @@ data_dir = os.path.join(os.path.curdir,"Data")      # actual road data is in Dat
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'val']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=2,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=32,
                                              shuffle=True, num_workers=0)
               for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -67,7 +70,7 @@ inputs, classes = next(iter(dataloaders['train']))
 def AddNoise(Inputs):
     noise_shape = np.shape(Inputs)
 
-    noise = np.random.normal(0, 0.10, noise_shape)       #np.random.normal(mean, variance, shape)
+    noise = np.random.normal(0, 0.15, noise_shape)       #np.random.normal(mean, variance, shape)
     noise = torch.from_numpy(noise)
     noise = noise.type(torch.float)
     inputs = Inputs + noise
@@ -99,12 +102,12 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
             running_loss = 0.0
             running_corrects = 0
 
-            for inputs, labels in dataloaders[phase]:
+            for inputs, labels in tqdm.tqdm(dataloaders[phase]):
 
                 # out = torchvision.utils.make_grid(inputs)
                 # imshow(out, title=[x for x in labels.cpu().detach().numpy()])
-                # if phase == 'train':
-                #     inputs = AddNoise(inputs)
+                if phase == 'train':
+                    inputs = AddNoise(inputs)
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
@@ -165,7 +168,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs):
     plt.legend(loc="upper right")
 
     plt.figure(2)
-    plt.title("Accuracy 1.0", fontsize=16)
+    plt.title("Accuracy", fontsize=16)
     plt.xlabel("epochs", fontsize=12)
     plt.ylabel("accuracy", fontsize=12)
     plt.plot(acc_v, label="Val accuaracy")
@@ -219,13 +222,13 @@ optimizer = optim.SGD(
         {"params": model.classifier[0].parameters()},
         {"params": model.classifier[3].parameters()},
         {"params": model.classifier[6].parameters(), "lr": 0.001},
-    ], lr = 0.000001, momentum=0.9
+    ], lr = 0.00001, momentum=0.9, weight_decay= 0.00001
 )
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=170, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=12, gamma=0.1)
 
 model_conv = train_model(model_conv, criterion, optimizer,
-                         exp_lr_scheduler, num_epochs=160)
+                         exp_lr_scheduler, num_epochs=50)
 
 if not os.path.exists("Weights"):
     os.makedirs("Weights")
