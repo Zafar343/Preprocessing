@@ -221,19 +221,19 @@ optimizer = optim.SGD(
     [
         {"params": model.classifier[0].parameters()},
         {"params": model.classifier[3].parameters()},
-        {"params": model.classifier[6].parameters(), "lr": 0.001},
+        {"params": model.classifier[6].parameters(), "lr": 0.01},
     ], lr = 0.00001, momentum=0.9, weight_decay= 0.00001
 )
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=12, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 model_conv = train_model(model_conv, criterion, optimizer,
-                         exp_lr_scheduler, num_epochs=50)
+                         exp_lr_scheduler, num_epochs=24)
 
 if not os.path.exists("Weights"):
     os.makedirs("Weights")
 # Saving the model
-save_path = "Weights/model_best2.pth"
+save_path = "Weights/model_best3.pth"
 torch.save(model.state_dict(), save_path)
 
 
