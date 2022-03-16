@@ -7,7 +7,7 @@ import PyQt5
 from matplotlib import pyplot as plt
 
 
-df = pd.read_csv("test_labels.csv")
+df = pd.read_csv("labels.csv")
 df.reset_index(drop=True, inplace=True)
 print(df)
 path = os.path.join(os.path.curdir, "Data/Test")
@@ -16,7 +16,9 @@ for filename in os.listdir(path):
     #print(df.iat[id_-1,1])
     img = cv.imread(os.path.join(path, filename))
     #print("Current Image:/ ",id_)
-    cv.imshow("Image_id="+str(id_)+" /  label="+str(df.iat[id_-1,1]), img)
+    image_label = "Image_id="+str(id_)+" /  label="+str(df.iat[id_-1,1])
+    cv.namedWindow(image_label, cv.WINDOW_NORMAL)
+    cv.imshow(image_label, img)
     cv.waitKey(0)
     cv.destroyAllWindows()
 

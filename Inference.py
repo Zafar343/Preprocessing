@@ -46,7 +46,7 @@ def blueprint():
     model.classifier[6] = nn.Linear(4096, 2)  # changing blueprint final layer according to oure requirement
     # print(model)
     model.load_state_dict(
-        torch.load("Weights/model_best.pth"))  # loading our trained weights and biases into the blueprint model
+        torch.load("Weights/model_best3.pth"))  # loading our trained weights and biases into the blueprint model
     transform = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
@@ -69,7 +69,7 @@ def infer(img, model, transform, device):
     model.to(device)  # setting model to GPU
 
     img = transform(img)
-    Imshow(img)
+    #Imshow(img)
     # print(img.shape)
     img = img.unsqueeze(0)
     img = img.to(device)
@@ -82,27 +82,27 @@ def infer(img, model, transform, device):
 #____________________________Predictions_____________________________________________________________________
 #inference starts here
 model, transform, device = blueprint()
-#id_list = []        #list to store image id to be used at later stage
+id_list = []        #list to store image id to be used at later stage
 pred_list = []      #list to store the pridictions of model on test data to be used for actual classification and visualization
-# path = os.path.join(os.path.curdir,"Data/Test")     #path to test set
-# #infering on each image
-# for filename in tqdm.tqdm(os.listdir(path)):
-#         img = Image.open(os.path.join(path,filename))   #.convert('RGB')
-#         _id = int(filename.split('.')[0])
-#         #print(_id)
-#         preds = infer(img=img, model=model)
-#         #print(preds)
-#         id_list.append(_id)
-#         pred_list.append(preds[0])
-# # making a data frame containing image id and prediction result
-# res = pd.DataFrame({
-#     'id': id_list,
-#     'label': pred_list
-# })
-#
-# res.sort_values(by='id', inplace=True)
-# res.reset_index(drop=True, inplace=True)
-# #res.to_csv("predictions.csv")
+path = os.path.join(os.path.curdir,"Data/Test")     #path to test set
+#infering on each image
+for filename in tqdm.tqdm(os.listdir(path)):
+        img = Image.open(os.path.join(path,filename))   #.convert('RGB')
+        _id = int(filename.split('.')[0])
+        #print(_id)
+        preds = infer(img=img, model=model, transform=transform, device=device)
+        #print(preds)
+        id_list.append(_id)
+        pred_list.append(preds[0])
+# making a data frame containing image id and prediction result
+res = pd.DataFrame({
+    'id': id_list,
+    'label': pred_list
+})
+
+res.sort_values(by='id', inplace=True)
+res.reset_index(drop=True, inplace=True)
+res.to_csv("predictions2.csv")
 # #print(res)
 #
 # #________________Visualize Prediction_____________________________________________
@@ -130,41 +130,41 @@ pred_list = []      #list to store the pridictions of model on test data to be u
 # plt.show()
 
 
-with open("out_0.json", 'r') as f:
-    data = json.loads(f.read())
-    frames_list = pd.json_normalize(data, record_path=['frames'])
-    loop = len(frames_list)
-    for i in range(loop):
-        image_string = frames_list['frame'][i]
-        result = re.search("data:image/(?P<ext>.*?);base64,(?P<data>.*)", image_string, re.DOTALL)
-        if result:
-            ext = result.groupdict().get("ext")
-            data = result.groupdict().get("data")
-        else:
-            raise Exception("Do not parse!")
-        imgdata = base64.b64decode(str(data))
-        image = Image.open(io.BytesIO(imgdata))
-        frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
-        frame = Image.fromarray(frame)
-        width, height = frame.size
-        #print(width,height)
-        #frame = torch.unsqueeze(frame,0)
-        #Imshow(frame)
-        #frame.show()
-        preds = infer(img =frame, model=model, transform=transform, device=device)
-        pred_list.append(preds[0])
-        print('working')
-        # cv2.imshow("Abnormal Image " if preds[0]>0.5 else "Normal Image",np.array(image))
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-#print(len(pred_list))
-count = 0
-for i in range(len(pred_list)):
-    print(pred_list[i])
-    if pred_list[i]>0.5:
-        #print(pred_list[i])
-        count = count+1
-        print(count)
-    else:
-        print("pred is less than 0.5")
-print((len(pred_list)-count)/len(pred_list))
+# with open("out_0.json", 'r') as f:
+#     data = json.loads(f.read())
+#     frames_list = pd.json_normalize(data, record_path=['frames'])
+#     loop = len(frames_list)
+#     for i in range(loop):
+#         image_string = frames_list['frame'][i]
+#         result = re.search("data:image/(?P<ext>.*?);base64,(?P<data>.*)", image_string, re.DOTALL)
+#         if result:
+#             ext = result.groupdict().get("ext")
+#             data = result.groupdict().get("data")
+#         else:
+#             raise Exception("Do not parse!")
+#         imgdata = base64.b64decode(str(data))
+#         image = Image.open(io.BytesIO(imgdata))
+#         frame = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
+#         frame = Image.fromarray(frame)
+#         width, height = frame.size
+#         #print(width,height)
+#         #frame = torch.unsqueeze(frame,0)
+#         #Imshow(frame)
+#         #frame.show()
+#         preds = infer(img =frame, model=model, transform=transform, device=device)
+#         pred_list.append(preds[0])
+#         print('working')
+#         # cv2.imshow("Abnormal Image " if preds[0]>0.5 else "Normal Image",np.array(image))
+#         # cv2.waitKey(0)
+#         # cv2.destroyAllWindows()
+# #print(len(pred_list))
+# count = 0
+# for i in range(len(pred_list)):
+#     print(pred_list[i])
+#     if pred_list[i]>0.5:
+#         #print(pred_list[i])
+#         count = count+1
+#         print(count)
+#     else:
+#         print("pred is less than 0.5")
+# print((len(pred_list)-count)/len(pred_list))

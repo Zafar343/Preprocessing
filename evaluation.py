@@ -7,12 +7,12 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import numpy as np
 
 
-df = pd.read_csv(os.path.join(os.path.curdir,"OCSVM_scoresNfc123.csv"))
+df = pd.read_csv(os.path.join(os.path.curdir,"OCSVM_scoresnew3.csv"))
 df.reset_index(drop=True, inplace=True)
 #print(df)
 preds = df.iloc[:,1].to_numpy()         # array of predictions
 print(preds)
-labels = pd.read_csv(os.path.join(os.path.curdir, "test_labels.csv"))
+labels = pd.read_csv(os.path.join(os.path.curdir, "labels.csv"))
 labels = labels.iloc[:,1].to_numpy()            # array of test labels
 print(labels)
 scores = np.zeros_like(preds)           #scores based on predictions on test data
